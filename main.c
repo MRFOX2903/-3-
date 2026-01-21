@@ -15,7 +15,4 @@ int main() {
         chooseLocation();
         waitForExit();
     }
-
-    cleanup();
-    return 0;
 }
