@@ -17,16 +17,6 @@ void waitForExit() {
     clearConsole();
 }
 
-int gateCheck(Player* player) {
-    int result = 0;
-    if (player->armor.chest != NULL && player->armor.legs != NULL) {
-        if (player->current_hp >= 140 && player->total_defense >= 15) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 int BranchingPointInfo() {
     int choice;
     showPlayerStats(&globalPlayer);
@@ -47,7 +37,90 @@ int BranchingPointInfo() {
     return choice;
 }
 
-//-------
+void findArmor(int min_hp, int max_hp, int min_def, int max_def, int min_dur, int max_dur) {
+
+    int armor_type = getRandomInt(0, 1);
+    const char* armor_type_name = (armor_type == 0) ? "CHEST" : "LEGS";
+
+    ArmorPiece* found_armor = generateRandomArmor(armor_type, min_hp, max_hp, min_def, max_def, min_dur, max_dur);
+    if (found_armor != NULL) {
+        printf("\n=================================================================\n");
+        printf(" CONGRATULATIONS! YOU FOUND ARMOR!\n");
+        printf("=================================================================\n");
+        printf(" Type: %s armor\n", armor_type_name);
+        printf(" Name: %s\n", found_armor->name);
+        printf(" Defense: +%d\n", found_armor->defense);
+        printf(" Durability: %d\n", found_armor->durability);
+        printf(" HP Boost: +%d%%\n", found_armor->hp_boost);
+        printf(" Value: %d gold\n", found_armor->price);
+        printf("=================================================================\n");
+
+        printf("\n Your current %s armor: ", armor_type_name);
+
+        if (armor_type == 0) {
+            if (globalPlayer.armor.chest != NULL) {
+                printf("%s (Def: +%d, HP: +%d%%, Durability: %d)\n",
+                    globalPlayer.armor.chest->name,
+                    globalPlayer.armor.chest->defense,
+                    globalPlayer.armor.chest->hp_boost,
+                    globalPlayer.armor.chest->durability);
+            }
+            else {
+                printf(" NONE\n");
+            }
+        }
+
+        else {
+            if (globalPlayer.armor.legs != NULL) {
+                printf("%s (Def: +%d, HP: +%d%%, Durability: %d)\n",
+                    globalPlayer.armor.legs->name,
+                    globalPlayer.armor.legs->defense,
+                    globalPlayer.armor.legs->hp_boost,
+                    globalPlayer.armor.legs->durability);
+            }
+            else {
+                printf(" NONE\n");
+            }
+        }
+
+        printf("\n Do you want to equip this armor?\n");
+        printf(" 1 - YES, equip found armor\n");
+        printf(" 0 - NO, keep current armor\n");
+        printf(" Enter your choice: ");
+
+        int armorChoice;
+        scanf("%d", &armorChoice);
+
+        while (getchar() != '\n');
+
+        if (armorChoice == 1) {
+            if (armor_type == 0) {
+                freeArmorPiece(&globalPlayer.armor.chest);
+                globalPlayer.armor.chest = found_armor;
+            }
+            else {
+                freeArmorPiece(&globalPlayer.armor.legs);
+                globalPlayer.armor.legs = found_armor;
+            }
+            recalculateStats(&globalPlayer);
+
+            printf("\n=================================================================\n");
+            printf(" ARMOR EQUIPPED!\n");
+            printf(" You are now wearing: %s\n", found_armor->name);
+            printf("=================================================================\n");
+        }
+        else {
+            free(found_armor);
+            found_armor = NULL;
+
+            printf("\n=================================================================\n");
+            printf(" ARMOR LEFT BEHIND\n");
+            printf("=================================================================\n");
+        }
+    }
+}
+
+//-------(блок лагеря)
 
 void mainCamp() {
     showPlayerStats(&globalPlayer);
@@ -176,6 +249,7 @@ void sellInCamp(Player* player) {
 
         if (Choice == 1) {
             clearConsole();
+            
             if (player->armor.chest != NULL) {
                 globalPlayer.cash += globalPlayer.armor.chest->price;
                 freeArmorPiece(&globalPlayer.armor.chest);
@@ -184,6 +258,7 @@ void sellInCamp(Player* player) {
                 printf("\n You sell Chest\n");
 
             }
+                
             else {
                 printf("\n You haven't Chest\n");
             }
@@ -200,6 +275,7 @@ void sellInCamp(Player* player) {
                 printf("\n You sell Legs\n");
 
             }
+                
             else {
                 printf("\n You haven't Legs\n");
             }
@@ -233,17 +309,29 @@ void shopInCamp() {
         ArmorPiece* relic2 = generateRandomArmor(getRandomInt(0, 1), 10, 30, 3, 7, 25, 75);
         ArmorPiece* relic3 = generateRandomArmor(getRandomInt(0, 1), 1, 20, 1, 4, 1, 50);
 
+        ArmorPiece** ShopArr = (ArmorPiece**)malloc(sizeof(ArmorPiece*) * 3);
+        ShopArr[0] = relic1;
+        ShopArr[1] = relic2;
+        ShopArr[2] = relic3;
+        sortShopArr(ShopArr, 3);
+
         printf(" AVAILABLE RELICS:\n");
         printf("=================================================================\n");
 
-        printf(" 1 - %s (HP: +%d%%, DEF: +%d, DUR: %d)\n", relic1->name, relic1->hp_boost, relic1->defense, relic1->durability);
-        printf("   Price: %d gold\n", relic1->price);
+        printf(" 1 - %s (HP: +%d%%, DEF: +%d, DUR: %d)\n",
+            ShopArr[0]->name, ShopArr[0]->hp_boost, ShopArr[0]->defense, ShopArr[0]->durability);
 
-        printf(" 2 - %s (HP: +%d%%, DEF: +%d, DUR: %d)\n", relic2->name, relic2->hp_boost, relic2->defense, relic2->durability);
-        printf("   Price: %d gold\n", relic2->price);
+        printf("   Price: %d gold\n", ShopArr[0]->price);
 
-        printf(" 3 - %s (HP: +%d%%, DEF: +%d, DUR: %d)\n", relic3->name, relic3->hp_boost, relic3->defense, relic3->durability);
-        printf("   Price: %d gold\n", relic3->price);
+        printf(" 2 - %s (HP: +%d%%, DEF: +%d, DUR: %d)\n",
+            ShopArr[1]->name, ShopArr[1]->hp_boost, ShopArr[1]->defense, ShopArr[1]->durability);
+
+        printf("   Price: %d gold\n", ShopArr[1]->price);
+
+        printf(" 3 - %s (HP: +%d%%, DEF: +%d, DUR: %d)\n",
+            ShopArr[2]->name, ShopArr[2]->hp_boost, ShopArr[2]->defense, ShopArr[2]->durability);
+
+        printf("   Price: %d gold\n", ShopArr[2]->price);
 
         printf("=================================================================\n");
         printf(" Your gold: %d\n", globalPlayer.cash);
@@ -257,10 +345,8 @@ void shopInCamp() {
         showPlayerStats(&globalPlayer);
 
         if (buyChoice >= 1 && buyChoice <= 3) {
-            ArmorPiece* selectedRelic = NULL;
-            if (buyChoice == 1) selectedRelic = relic1;
-            else if (buyChoice == 2) selectedRelic = relic2;
-            else selectedRelic = relic3;
+            int relicIndex = buyChoice - 1;
+            ArmorPiece* selectedRelic = ShopArr[relicIndex];
 
             if (globalPlayer.cash >= selectedRelic->price) {
                 globalPlayer.cash -= selectedRelic->price;
@@ -284,6 +370,7 @@ void shopInCamp() {
                     globalPlayer.armor.chest = selectedRelic;
                     printf("\n SUCCESS! %s - CHEST armor!\n", selectedRelic->name);
                 }
+                    
                 else {
                     if (globalPlayer.armor.legs != NULL) {
                         globalPlayer.cash += globalPlayer.armor.legs->price;
@@ -307,6 +394,7 @@ void shopInCamp() {
                 getchar();
 
             }
+                
             else {
                 printf("\n NOT ENOUGH GOLD! Need: %d, Have: %d\n", selectedRelic->price, globalPlayer.cash);
                 free(relic1); free(relic2); free(relic3);
@@ -316,10 +404,12 @@ void shopInCamp() {
             }
 
         }
+            
         else if (buyChoice == 0) {
             break;
 
         }
+            
         else {
             printf("\n Invalid choice! Please enter 1-3 or 0.\n");
             free(relic1); free(relic2); free(relic3);
@@ -332,7 +422,17 @@ void shopInCamp() {
     clearConsole();
 }
 
-//---------
+//---------(блок Великих ворот)
+
+int gateCheck(Player* player) {
+    int result = 0;
+    if (player->armor.chest != NULL && player->armor.legs != NULL) {
+        if (player->current_hp >= 140 && player->total_defense >= 15) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 void inGate() {
     showPlayerStats(&globalPlayer);
@@ -355,9 +455,11 @@ void inGate() {
     while (getchar() != '\n');
 
     if (gateChoice == 1 && gateCheck(&globalPlayer) == 1) {
+        printf("\n\n=================================================================\n");
         printf(" Congratulations! You've been released\n");
         printf(" This is the end of my little game for now\n");
         printf(" to complete the game, enter something\n");
+        printf("\n------------------------THANKS FOR PLAНING-----------------------\n");
 
         int campChoice;
         scanf("%d", &campChoice);
@@ -384,99 +486,7 @@ void inGate() {
     }
 }
 
-void inAncienRuins(int min_hp, int max_hp, int min_def, int max_def, int min_dur, int max_dur) {
-    showPlayerStats(&globalPlayer);
-
-    printf("------------------------CURRENT LOCATION-------------------------\n");
-    printf("=================================================================\n");
-    printf(" Ancient Ruins:\n");
-    printf(" Dust and destruction surround you...\n");
-    printf("=================================================================\n");
-    findArmor(min_hp, max_hp, min_def, max_def, min_dur, max_dur);
-}
-
-void findArmor(int min_hp, int max_hp, int min_def, int max_def, int min_dur, int max_dur) {
-
-    int armor_type = getRandomInt(0, 1);
-    const char* armor_type_name = (armor_type == 0) ? "CHEST" : "LEGS";
-
-    ArmorPiece* found_armor = generateRandomArmor(armor_type, min_hp, max_hp, min_def, max_def, min_dur, max_dur);
-    if (found_armor != NULL) {
-        printf("\n=================================================================\n");
-        printf(" CONGRATULATIONS! YOU FOUND ARMOR!\n");
-        printf("=================================================================\n");
-        printf(" Type: %s armor\n", armor_type_name);
-        printf(" Name: %s\n", found_armor->name);
-        printf(" Defense: +%d\n", found_armor->defense);
-        printf(" Durability: %d\n", found_armor->durability);
-        printf(" HP Boost: +%d%%\n", found_armor->hp_boost);
-        printf(" Value: %d gold\n", found_armor->price);
-        printf("=================================================================\n");
-
-        printf("\n Your current %s armor: ", armor_type_name);
-
-        if (armor_type == 0) {
-            if (globalPlayer.armor.chest != NULL) {
-                printf("%s (Def: +%d, HP: +%d%%, Durability: %d)\n",
-                    globalPlayer.armor.chest->name,
-                    globalPlayer.armor.chest->defense,
-                    globalPlayer.armor.chest->hp_boost,
-                    globalPlayer.armor.chest->durability);
-            }
-            else {
-                printf(" NONE\n");
-            }
-        }
-
-        else {
-            if (globalPlayer.armor.legs != NULL) {
-                printf("%s (Def: +%d, HP: +%d%%, Durability: %d)\n",
-                    globalPlayer.armor.legs->name,
-                    globalPlayer.armor.legs->defense,
-                    globalPlayer.armor.legs->hp_boost,
-                    globalPlayer.armor.legs->durability);
-            }
-            else {
-                printf(" NONE\n");
-            }
-        }
-
-        printf("\n Do you want to equip this armor?\n");
-        printf(" 1 - YES, equip found armor\n");
-        printf(" 0 - NO, keep current armor\n");
-        printf(" Enter your choice: ");
-
-        int armorChoice;
-        scanf("%d", &armorChoice);
-
-        while (getchar() != '\n');
-
-        if (armorChoice == 1) {
-            if (armor_type == 0) {
-                freeArmorPiece(&globalPlayer.armor.chest);
-                globalPlayer.armor.chest = found_armor;
-            }
-            else {
-                freeArmorPiece(&globalPlayer.armor.legs);
-                globalPlayer.armor.legs = found_armor;
-            }
-            recalculateStats(&globalPlayer);
-
-            printf("\n=================================================================\n");
-            printf(" ARMOR EQUIPPED!\n");
-            printf(" You are now wearing: %s\n", found_armor->name);
-            printf("=================================================================\n");
-        }
-        else {
-            free(found_armor);
-            found_armor = NULL;
-
-            printf("\n=================================================================\n");
-            printf(" ARMOR LEFT BEHIND\n");
-            printf("=================================================================\n");
-        }
-    }
-}
+//---------(Влок Случайного подземелья)
 
 void randomDungeon() {
     int random_way = getRandomInt(1, 8);//редакция выборки комнат для проверки
@@ -528,6 +538,19 @@ void randomDungeonLobby() {
     if (wayChoice == 1) {
         randomDungeon();
     }
+}
+
+//---------(блок Остальных локаций)
+
+void inAncienRuins(int min_hp, int max_hp, int min_def, int max_def, int min_dur, int max_dur) {
+    showPlayerStats(&globalPlayer);
+
+    printf("------------------------CURRENT LOCATION-------------------------\n");
+    printf("=================================================================\n");
+    printf(" Ancient Ruins:\n");
+    printf(" Dust and destruction surround you...\n");
+    printf("=================================================================\n");
+    findArmor(min_hp, max_hp, min_def, max_def, min_dur, max_dur);
 }
 
 void guideHouse() {
@@ -634,7 +657,6 @@ void chooseLocation() {
     case 3:
         mainCamp();
         break;
-        //ПО ВОЗМОЖНОСТИ ДОБАВИТЬВ ЭТУ ЛОКАЦИЮ ПРОДАЖУ РЕЛИКОВ И ОТХИЛ ХП ЗА МАНИ-МАНИ-МАНИ
 
     case 4:
         inGate();
@@ -655,6 +677,4 @@ void chooseLocation() {
     }
     printf("\n");
 }
-    printf("\n");
 
-}
