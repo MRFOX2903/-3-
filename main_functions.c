@@ -112,9 +112,8 @@ void initPlayer(Player* player) {
 }
 
 void showPlayerStats(Player* player) {
-    printf("------------------------CURRENT LOCATION-------------------------\n");
+    printf("------------------------PLAYER STATISTICS-------------------------\n");
     printf("=================================================================\n");
-    printf(" PLAYER STATISTICS:\n");
     printf(" HP: %d/%d", player->current_hp, player->current_hp + player->lost_hp);
     printf("    DEF: %d", player->total_defense);
     printf("    CASH: %d gold\n", player->cash);
@@ -133,6 +132,7 @@ void showPlayerStats(Player* player) {
     else {
         printf(" LEGS: NONE\n");
     }
+    printf("=================================================================\n");
 }
 
 void freeArmorPiece(ArmorPiece** armor) {
@@ -165,4 +165,23 @@ void armorDamage(Player* player, int value) {
             freeArmorPiece(&player->armor.legs);
         }
     }
+}
+
+ArmorPiece** sortShopArr(ArmorPiece** arr, int size) {
+
+    ArmorPiece* temp = NULL;
+
+    for (int i = 0; i < size - 1; i++) {
+        for (int j = 0; j < size - i - 1; j++) {
+            if (arr[j] != NULL && arr[j + 1] != NULL) {
+                if (arr[j]->price < arr[j + 1]->price) {
+                    temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                }
+            }
+        }
+    }
+
+    return arr;
 }
